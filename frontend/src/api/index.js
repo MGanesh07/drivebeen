@@ -1,8 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: '/api',
-  headers: { 'Content-Type': 'application/json' },
+  baseURL: import.meta.env.VITE_API_URL,
 });
 
 // Attach JWT token to every request
@@ -19,9 +18,9 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const isAuthRequest = error.config?.url?.includes('/auth/login') || 
-                          error.config?.url?.includes('/auth/register') ||
-                          error.config?.url?.includes('/auth/password');
+    const isAuthRequest = error.config?.url?.includes('/auth/login') ||
+      error.config?.url?.includes('/auth/register') ||
+      error.config?.url?.includes('/auth/password');
     if (error.response?.status === 401 && !isAuthRequest) {
       localStorage.removeItem('drivebeen_token');
       localStorage.removeItem('drivebeen_user');

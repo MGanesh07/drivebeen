@@ -54,6 +54,13 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/search', searchRoutes);
 
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    message: "DriveBeen API is running successfully"
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'DriveBeen API is running 🚀', timestamp: new Date().toISOString() });

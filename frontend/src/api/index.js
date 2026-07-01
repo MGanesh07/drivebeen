@@ -1,8 +1,10 @@
-import axios from 'axios';
+import axios from "axios";
 
 const api = axios.create({
-  baseURL: '/api',
-  headers: { 'Content-Type': 'application/json' },
+  baseURL: import.meta.env.VITE_API_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
 // Attach JWT token to every request
@@ -30,8 +32,6 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-export default api;
 
 // Auth
 export const authAPI = {
@@ -110,3 +110,5 @@ export const notificationsAPI = {
 export const searchAPI = {
   search: (params) => api.get('/search', { params }),
 };
+
+export default api;

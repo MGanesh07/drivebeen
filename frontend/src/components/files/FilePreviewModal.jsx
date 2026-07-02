@@ -48,7 +48,7 @@ export default function FilePreviewModal({ file: initialFile, onClose }) {
 
   const token = localStorage.getItem('drivebeen_token');
   const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
-  const apiUrl = `/api/files/serve/${activeFile.owner}/${activeFile.storageKey?.split(/[/\\]/).pop()}${tokenParam}`;
+  const apiUrl = `/api/files/serve/${activeFile._id}${tokenParam}`;
 
   const renderPreview = () => {
     const { mimeType, name } = activeFile;

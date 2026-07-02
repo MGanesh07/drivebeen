@@ -1,54 +1,101 @@
 /**
- * AWS S3 Storage Adapter (Stubbed for future integration)
- * Install: npm install @aws-sdk/client-s3 @aws-sdk/s3-request-presigner
- *
+ * AWS S3 Storage Adapter
  * Required ENV vars:
  *   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, AWS_S3_BUCKET
  */
 
-// const { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
-// const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
-// const fs = require('fs');
-// const path = require('path');
+const { S3Client, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
+const { Upload } = require('@aws-sdk/lib-storage');
+const fs = require('fs');
+const path = require('path');
 
-// const s3 = new S3Client({
-//   region: process.env.AWS_REGION,
-//   credentials: {
-//     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-//     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-//   },
-// });
+// Helper to check if credentials are set
+const isS3Configured = () => {
+  return !!(
+    process.env.AWS_ACCESS_KEY_ID &&
+    process.env.AWS_SECRET_ACCESS_KEY &&
+    process.env.AWS_REGION &&
+    process.env.AWS_S3_BUCKET
+  );
+};
+
+let s3 = null;
+if (isS3Configured()) {
+  s3 = new S3Client({
+    region: process.env.AWS_REGION,
+    credentials: {
+      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    },
+  });
+}
 
 const uploadFile = async (file) => {
-  throw new Error('S3 adapter not yet configured. Set STORAGE_ADAPTER=local in .env');
-  // const fileStream = fs.createReadStream(file.path);
-  // const key = `uploads/${Date.now()}-${path.basename(file.originalname)}`;
-  // await s3.send(new PutObjectCommand({
-  //   Bucket: process.env.AWS_S3_BUCKET,
-  //   Key: key,
-  //   Body: fileStream,
-  //   ContentType: file.mimetype,
-  // }));
-  // return { storageKey: key, storageUrl: `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/${key}` };
+  if (!s3) {
+    throw new Error('AWS S3 credentials or configuration are missing in .env file.');
+  }
+
+  const fileStream = fs.createReadStream(file.path);
+  const key = `uploads/${Date.now()}-${path.basename(file.originalname)}`;
+  
+  // Use @aws-sdk/lib-storage Upload for streaming & multipart support for large files
+  const parallelUpload = new Upload({
+    client: s3,
+    params: {
+      Bucket: process.env.AWS_S3_BUCKET,
+      Key: key,
+      Body: fileStream,
+      ContentType: file.mimetype,
+    },
+    queueSize: 4, // 4 concurrent parts
+    partSize: 1024 * 1024 * 5, // 5MB part size (S3 minimum is 5MB)
+    leavePartsOnError: false, // Clean up parts if upload fails
+  });
+
+  await parallelUpload.done();
+
+  return {
+    storageKey: key,
+    storageUrl: `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`,
+  };
 };
 
 const getFileStream = async (storageKey) => {
-  throw new Error('S3 adapter not yet configured');
-  // const response = await s3.send(new GetObjectCommand({ Bucket: process.env.AWS_S3_BUCKET, Key: storageKey }));
-  // return response.Body;
+  if (!s3) {
+    throw new Error('S3 client not configured');
+  }
+  const response = await s3.send(new GetObjectCommand({
+    Bucket: process.env.AWS_S3_BUCKET,
+    Key: storageKey,
+  }));
+  return response.Body; // Node stream
 };
 
 const deleteFile = async (storageKey) => {
-  throw new Error('S3 adapter not yet configured');
-  // await s3.send(new DeleteObjectCommand({ Bucket: process.env.AWS_S3_BUCKET, Key: storageKey }));
+  if (!s3) {
+    throw new Error('S3 client not configured');
+  }
+  await s3.send(new DeleteObjectCommand({
+    Bucket: process.env.AWS_S3_BUCKET,
+    Key: storageKey,
+  }));
 };
 
 const getFileUrl = (storageKey) => {
-  return `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/${storageKey}`;
+  return `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || 'us-east-1'}.amazonaws.com/${storageKey}`;
 };
 
 const fileExists = async (storageKey) => {
-  return false;
+  if (!s3) return false;
+  try {
+    await s3.send(new HeadObjectCommand({
+      Bucket: process.env.AWS_S3_BUCKET,
+      Key: storageKey,
+    }));
+    return true;
+  } catch (err) {
+    return false;
+  }
 };
 
 module.exports = { uploadFile, getFileStream, deleteFile, getFileUrl, fileExists };

@@ -12,7 +12,7 @@ router.use(protect);
 
 router.get('/favorites', getFavorites);
 router.get('/recent', getRecentFiles);
-router.get('/serve/:userId/:filename', serveFile);
+router.get('/serve/:id', serveFile);
 
 router.post('/upload', upload.single('file'), uploadFile);
 router.get('/', getFiles);

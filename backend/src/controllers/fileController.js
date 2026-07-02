@@ -1,4 +1,5 @@
 const path = require('path');
+const fs = require('fs');
 const File = require('../models/File');
 const User = require('../models/User');
 const Activity = require('../models/Activity');
@@ -12,6 +13,14 @@ const uploadFile = asyncHandler(async (req, res) => {
 
   const { folder } = req.body;
   const { storageKey, storageUrl } = await storageService.uploadFile(req.file);
+
+  // Clean up local temp file created by multer if we're using S3 storage
+  if (process.env.STORAGE_ADAPTER === 's3' && req.file.path && fs.existsSync(req.file.path)) {
+    fs.unlink(req.file.path, (err) => {
+      if (err) console.error('Failed to delete temp file:', err);
+    });
+  }
+
   const ext = path.extname(req.file.originalname).replace('.', '').toLowerCase();
 
   const file = await File.create({
@@ -81,11 +90,9 @@ const downloadFile = asyncHandler(async (req, res) => {
   stream.pipe(res);
 });
 
-// GET /api/files/serve/:userId/:filename
+// GET /api/files/serve/:id
 const serveFile = asyncHandler(async (req, res) => {
-  const { userId, filename } = req.params;
-  const storageKey = path.resolve(process.env.UPLOAD_PATH || 'uploads', userId, filename);
-  const file = await File.findOne({ storageKey, owner: req.user._id });
+  const file = await File.findOne({ _id: req.params.id, owner: req.user._id, isDeleted: false });
   if (!file) return res.status(404).json({ success: false, message: 'File not found.' });
   const stream = await storageService.getFileStream(file.storageKey);
   res.setHeader('Content-Type', file.mimeType);

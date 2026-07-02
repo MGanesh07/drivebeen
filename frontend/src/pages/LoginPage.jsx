@@ -451,21 +451,6 @@ export default function AuthPage() {
                   </button>
                 </form>
 
-                {/* Demo credentials */}
-                <div style={{
-                  marginTop: '16px', padding: '12px 14px', borderRadius: '12px',
-                  background: '#f5f3ff', border: '1px solid #ede9fe',
-                }}>
-                  <p style={{ fontSize: '11px', color: '#7c3aed', margin: '0 0 4px', fontWeight: 600 }}>Demo Account</p>
-                  <button
-                    onClick={() => { setSignInEmail('alex@drivebeen.io'); setSignInPwd('password123'); }}
-                    style={{ fontSize: '12px', color: '#6d28d9', background: 'none', border: 'none', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}
-                  >
-                    alex@drivebeen.io / password123
-                  </button>
-                </div>
-
-
               </div>
 
               {/* Right welcome panel */}

@@ -1,3 +1,5 @@
+const { formatBytes } = require('../utils/helpers');
+
 const errorHandler = (err, req, res, next) => {
   let statusCode = err.statusCode || 500;
   let message = err.message || 'Internal Server Error';
@@ -24,7 +26,8 @@ const errorHandler = (err, req, res, next) => {
   // Multer file size error
   if (err.code === 'LIMIT_FILE_SIZE') {
     statusCode = 413;
-    message = 'File size exceeds the 50MB limit.';
+    const limit = parseInt(process.env.MAX_FILE_SIZE) || 1048576000;
+    message = `File size exceeds the allowed limit of ${formatBytes(limit)}.`;
   }
 
   if (process.env.NODE_ENV === 'development') {

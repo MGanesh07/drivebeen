@@ -83,7 +83,7 @@ export default function FileUploadModal({ onClose, folderId, onUploadComplete })
         });
         succeeded++;
       } catch (err) {
-        lastError = err.response?.data?.message || 'Upload failed. File size might exceed the allowed limit.';
+        lastError = err.response?.data?.message || 'Upload failed. Please check your connection or file.';
       }
       done++;
       setUploadProgress(Math.round((done / total) * 100));

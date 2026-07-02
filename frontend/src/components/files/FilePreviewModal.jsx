@@ -26,9 +26,9 @@ export default function FilePreviewModal({ file: initialFile, onClose }) {
   const handleDownload = async () => {
     try {
       const { data } = await filesAPI.downloadFile(activeFile._id);
-      const url = window.URL.createObjectURL(new Blob([data]));
+      const downloadUrl = data.downloadUrl;
       const a = document.createElement('a');
-      a.href = url;
+      a.href = downloadUrl;
       
       const ext = activeFile.originalName?.includes('.')
         ? `.${activeFile.originalName.split('.').pop()}`
@@ -38,7 +38,6 @@ export default function FilePreviewModal({ file: initialFile, onClose }) {
       
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       toast.success('Download started');
     } catch {

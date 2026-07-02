@@ -6,6 +6,7 @@
 
 const { S3Client, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand } = require('@aws-sdk/client-s3');
 const { Upload } = require('@aws-sdk/lib-storage');
+const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const fs = require('fs');
 const path = require('path');
 
@@ -85,6 +86,18 @@ const getFileUrl = (storageKey) => {
   return `https://${process.env.AWS_S3_BUCKET}.s3.${process.env.AWS_REGION || 'us-east-1'}.amazonaws.com/${storageKey}`;
 };
 
+const getDownloadUrl = async (storageKey, filename) => {
+  if (!s3) {
+    throw new Error('S3 client not configured');
+  }
+  const command = new GetObjectCommand({
+    Bucket: process.env.AWS_S3_BUCKET,
+    Key: storageKey,
+    ResponseContentDisposition: `attachment; filename="${encodeURIComponent(filename)}"`,
+  });
+  return getSignedUrl(s3, command, { expiresIn: 900 });
+};
+
 const fileExists = async (storageKey) => {
   if (!s3) return false;
   try {
@@ -98,4 +111,4 @@ const fileExists = async (storageKey) => {
   }
 };
 
-module.exports = { uploadFile, getFileStream, deleteFile, getFileUrl, fileExists };
+module.exports = { uploadFile, getFileStream, deleteFile, getFileUrl, getDownloadUrl, fileExists };

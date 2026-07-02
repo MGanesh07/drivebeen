@@ -174,21 +174,19 @@ export default function FileCard({ file, onUpdate, onDelete, onDeleteSuccess, on
     closeMenu();
     setDownloading(true);
     try {
-      const response = await filesAPI.downloadFile(activeFile._id);
-      const blob = new Blob([response.data]);
-      const url = window.URL.createObjectURL(blob);
+      const { data } = await filesAPI.downloadFile(activeFile._id);
+      const downloadUrl = data.downloadUrl;
       const a = document.createElement('a');
-      a.href = url;
-      // Use the user-visible name (may be renamed). If it has no extension,
-      // fall back to the extension from originalName.
+      a.href = downloadUrl;
+      
       const ext = activeFile.originalName?.includes('.')
         ? `.${activeFile.originalName.split('.').pop()}`
         : '';
       const hasExt = activeFile.name.includes('.');
       a.download = hasExt ? activeFile.name : `${activeFile.name}${ext}`;
+      
       document.body.appendChild(a);
       a.click();
-      window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
       toast.success('Download started');
     } catch {

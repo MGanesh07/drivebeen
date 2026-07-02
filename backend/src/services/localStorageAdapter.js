@@ -33,8 +33,14 @@ const getFileUrl = (storageKey) => {
   return `/api/files/serve/${userId}/${filename}`;
 };
 
+const getDownloadUrl = async (storageKey, filename) => {
+  const fileBasename = path.basename(storageKey);
+  const userId = path.basename(path.dirname(storageKey));
+  return `/api/files/download/raw/${userId}/${fileBasename}`;
+};
+
 const fileExists = async (storageKey) => {
   return fs.existsSync(storageKey);
 };
 
-module.exports = { uploadFile, getFileStream, deleteFile, getFileUrl, fileExists };
+module.exports = { uploadFile, getFileStream, deleteFile, getFileUrl, getDownloadUrl, fileExists };

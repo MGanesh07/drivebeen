@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   uploadFile, getFiles, getFile, downloadFile, serveFile,
-  updateFile, deleteFile, toggleFavorite, getFavorites,
+  downloadFileRaw, updateFile, deleteFile, toggleFavorite, getFavorites,
   getRecentFiles,
 } = require('../controllers/fileController');
 const { protect } = require('../middleware/auth');
@@ -13,6 +13,7 @@ router.use(protect);
 router.get('/favorites', getFavorites);
 router.get('/recent', getRecentFiles);
 router.get('/serve/:id', serveFile);
+router.get('/download/raw/:userId/:filename', downloadFileRaw);
 
 router.post('/upload', upload.single('file'), uploadFile);
 router.get('/', getFiles);

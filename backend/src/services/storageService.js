@@ -37,6 +37,14 @@ module.exports = {
   getFileUrl: (storageKey) => adapter.getFileUrl(storageKey),
 
   /**
+   * Get a pre-signed or raw download URL for a file
+   * @param {string} storageKey
+   * @param {string} filename - Renamed user-visible filename
+   * @returns {Promise<string>}
+   */
+  getDownloadUrl: (storageKey, filename) => adapter.getDownloadUrl(storageKey, filename),
+
+  /**
    * Check if a file exists
    * @param {string} storageKey
    * @returns {Promise<boolean>}

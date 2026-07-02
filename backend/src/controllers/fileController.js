@@ -79,13 +79,43 @@ const downloadFile = asyncHandler(async (req, res) => {
   const file = await File.findOne({ _id: req.params.id, owner: req.user._id, isDeleted: false });
   if (!file) return res.status(404).json({ success: false, message: 'File not found.' });
 
-  const stream = await storageService.getFileStream(file.storageKey);
+  // Update download count metrics
   file.downloadCount += 1;
   file.lastAccessedAt = new Date();
   await file.save();
   await Activity.create({ user: req.user._id, action: 'download', file: file._id, metadata: { name: file.name } });
 
-  res.setHeader('Content-Disposition', `attachment; filename="${file.originalName}"`);
+  // Resolve pre-signed or local download URL
+  if (process.env.STORAGE_ADAPTER === 's3') {
+    const downloadUrl = await storageService.getDownloadUrl(file.storageKey, file.name);
+    return res.json({ success: true, downloadUrl, isDirect: true });
+  } else {
+    const filename = path.basename(file.storageKey);
+    const userId = file.owner.toString();
+    const token = req.query.token || req.headers.authorization?.split(' ')[1];
+    const tokenParam = token ? `?token=${encodeURIComponent(token)}` : '';
+    const downloadUrl = `/api/files/download/raw/${userId}/${filename}${tokenParam}`;
+    return res.json({ success: true, downloadUrl, isDirect: false });
+  }
+});
+
+// GET /api/files/download/raw/:userId/:filename
+const downloadFileRaw = asyncHandler(async (req, res) => {
+  const { userId, filename } = req.params;
+  const storageKey = path.resolve(process.env.UPLOAD_PATH || 'uploads', userId, filename);
+  const file = await File.findOne({ storageKey, owner: req.user._id, isDeleted: false });
+  if (!file) return res.status(404).json({ success: false, message: 'File not found.' });
+
+  const stream = await storageService.getFileStream(file.storageKey);
+  
+  // Format target extension
+  const ext = file.originalName?.includes('.')
+    ? `.${file.originalName.split('.').pop()}`
+    : '';
+  const hasExt = file.name.includes('.');
+  const downloadName = hasExt ? file.name : `${file.name}${ext}`;
+
+  res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(downloadName)}"`);
   res.setHeader('Content-Type', file.mimeType);
   stream.pipe(res);
 });
@@ -181,7 +211,7 @@ const getArchivedFiles = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
-  uploadFile, getFiles, getFile, downloadFile, serveFile,
+  uploadFile, getFiles, getFile, downloadFile, serveFile, downloadFileRaw,
   updateFile, deleteFile, toggleFavorite, getFavorites,
   getRecentFiles, toggleArchive, getArchivedFiles,
 };
